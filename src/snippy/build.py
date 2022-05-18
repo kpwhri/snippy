@@ -29,7 +29,7 @@ def build(doc_iter, regexes, csv_dict, context=180, rowlimit=2000):
                     'postcontext': ' '.join(doc.text[m.end():m.end() + context].strip().split()),
                 })
                 counters[label] += 1
-        if min(counters.values()) >= rowlimit:  # stop when found enough of everything
+        if counters and min(counters.values()) >= rowlimit:  # stop when found enough of everything
             break
 
 
@@ -48,6 +48,8 @@ def main(connection_string: str, regex_file: pathlib.Path, metalabels: list[str]
     doc_iter = docs_from_db(connection_string, metalabels, tablename)
     regexes = load_regexes(regex_file)
     labels = [label for label, _ in regexes]
+    if len(labels) == 0:
+        raise ValueError('No labels found in regular expression file.')
     csv_dict = prepare_writers(labels, outpath, metalabels)
     build(doc_iter, regexes, csv_dict, context=context, rowlimit=rowlimit)
 
