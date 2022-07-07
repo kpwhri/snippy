@@ -1,9 +1,5 @@
-import pathlib
 from collections import defaultdict
 
-import click
-
-from snippy.reader import docs_from_db
 from snippy.regex import load_regexes
 from snippy.writer import prepare_writers
 
@@ -33,26 +29,12 @@ def build(doc_iter, regexes, csv_dict, context=180, rowlimit=2000):
             break
 
 
-@click.command()
-@click.argument('connection-string', type=str)
-@click.argument('tablename', type=str)
-@click.argument('regex-file', type=click.Path(exists=True, path_type=pathlib.Path, dir_okay=False))
-@click.argument('metalabels', nargs=-1, type=str)
-@click.option('--context', default=180, type=int)
-@click.option('--rowlimit', default=2000, type=int)
-@click.option('--outpath', type=click.Path(path_type=pathlib.Path, file_okay=False), default=pathlib.Path('.'))
-def main(connection_string: str, regex_file: pathlib.Path, metalabels: list[str], tablename: str,
-         *, outpath=pathlib.Path('.'), context=180, rowlimit=2000):
-    outpath.mkdir(exist_ok=True, parents=True)
+def run_build(context, doc_iter, metalabels, outpath, regex_file, rowlimit):
     metalabels = list(metalabels)
-    doc_iter = docs_from_db(connection_string, metalabels, tablename)
+    outpath.mkdir(exist_ok=True, parents=True)
     regexes = load_regexes(regex_file)
     labels = [label for label, _ in regexes]
     if len(labels) == 0:
         raise ValueError('No labels found in regular expression file.')
     csv_dict = prepare_writers(labels, outpath, metalabels)
     build(doc_iter, regexes, csv_dict, context=context, rowlimit=rowlimit)
-
-
-if __name__ == '__main__':
-    main()
